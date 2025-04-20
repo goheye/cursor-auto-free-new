@@ -31,13 +31,9 @@ class Config:
         # 指定 .env 文件的路径
         self.dotenv_path = os.path.join(application_path, ".env")
 
-        # 加载 .env 文件
-        if os.path.exists(self.dotenv_path):
-            load_dotenv(self.dotenv_path)
-            self.logger.info("成功加载环境变量配置文件")
-        else:
-            self.logger.warning(f"配置文件不存在: {self.dotenv_path}")
-
+        # 加载环境变量
+        self.load_env()
+        
         # 基础配置
         self.domain = os.getenv('DOMAIN', '').strip()
         
@@ -55,7 +51,7 @@ class Config:
         self.imap_protocol = os.getenv('IMAP_PROTOCOL', 'IMAP').strip()
         
         # 浏览器配置
-        self.browser_user_agent = os.getenv('BROWSER_USER_AGENT', '').strip()
+        self.browser_user_agent = os.getenv('BROWSER_USER_AGENT', 'Mozilla/5.0').strip()
         self.browser_headless = os.getenv('BROWSER_HEADLESS', 'True').lower() == 'true'
         self.browser_path = os.getenv('BROWSER_PATH', '').strip()
         self.browser_proxy = os.getenv('BROWSER_PROXY', '').strip()
@@ -63,6 +59,20 @@ class Config:
         # 检查配置
         self.check_config()
         
+    def load_env(self) -> None:
+        """
+        加载环境变量配置文件
+        
+        Raises:
+            FileNotFoundError: 当配置文件不存在时抛出
+        """
+        if not os.path.exists(self.dotenv_path):
+            self.logger.warning(f"配置文件不存在: {self.dotenv_path}")
+            return
+            
+        load_dotenv(self.dotenv_path)
+        self.logger.info("成功加载环境变量配置文件")
+
     def check_config(self) -> None:
         """
         检查配置项是否有效
@@ -91,7 +101,7 @@ class Config:
             self.logger.error(f"浏览器路径不存在: {self.browser_path}")
             raise ValueError(f"浏览器路径不存在: {self.browser_path}")
             
-        # 最后检查代理配置
+        # 检查代理配置
         if self.browser_proxy:
             try:
                 proxy_parts = self.browser_proxy.split(':')
