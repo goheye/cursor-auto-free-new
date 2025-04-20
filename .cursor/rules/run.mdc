@@ -1,0 +1,7 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+如果需要运行代码一定先运行虚拟环境
+
