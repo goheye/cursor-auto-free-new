@@ -247,7 +247,11 @@ class Config:
             raise ValueError("临时邮箱配置不完整")
             
         return {
-            'mail': self.temp_mail,
-            'epin': self.temp_mail_epin,
-            'ext': self.temp_mail_ext
-        } 
+            'temp_mail': self.temp_mail,
+            'temp_mail_epin': self.temp_mail_epin,
+            'temp_mail_ext': self.temp_mail_ext
+        }
+        
+    def get_protocol(self) -> str:
+        """获取邮箱协议类型"""
+        return self.imap_protocol if self.temp_mail == "null" else "TEMP" 
