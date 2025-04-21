@@ -1,77 +1,126 @@
-# 机器码管理模块设计文档
+# MachineManager 模块
 
-## 1. 模块概述
+## 概述
 
-机器码管理模块负责处理与机器码相关的所有操作，包括获取、重置和补丁等功能。
+MachineManager 模块负责管理机器码相关的操作，包括获取、重置、补丁和验证机器码等功能。
 
-## 2. 功能说明
+## 功能说明
 
-### 2.1 机器码获取
-- 获取当前机器的唯一标识符
-- 支持多种获取方式（硬件信息、系统信息等）
-- 提供机器码缓存机制
-
-### 2.2 机器码重置
-- 重置当前机器的标识符
-- 支持多种重置方式
-- 提供重置验证机制
-
-### 2.3 补丁功能
+- 获取当前机器的机器码
+- 重置机器码
 - 应用机器码补丁
-- 验证补丁有效性
-- 提供补丁回滚功能
+- 验证机器码有效性
 
-## 3. 接口定义
+## 类定义
 
-### 3.1 MachineManager 类
+### MachineManager
+
+机器码管理类，负责处理所有与机器码相关的操作。
+
+#### 方法
+
+##### `get_machine_id() -> str`
+
+获取当前机器的机器码。
+
 ```python
-class MachineManager:
-    def __init__(self):
-        """初始化机器码管理器"""
-        pass
-        
-    def get_machine_id(self):
-        """获取机器码"""
-        pass
-        
-    def reset_machine_id(self):
-        """重置机器码"""
-        pass
-        
-    def apply_patch(self, patch_data):
-        """应用补丁"""
-        pass
-        
-    def rollback_patch(self):
-        """回滚补丁"""
-        pass
+def get_machine_id(self) -> str:
+    """
+    获取当前机器的机器码
+    
+    返回:
+        str: 机器码字符串，如果获取失败则返回空字符串
+    """
 ```
 
-## 4. 使用示例
+##### `reset_machine_id() -> bool`
+
+重置当前机器的机器码。
 
 ```python
-from machine_manager import MachineManager
+def reset_machine_id(self) -> bool:
+    """
+    重置当前机器的机器码
+    
+    返回:
+        bool: 是否成功重置
+    """
+```
 
-# 初始化机器码管理器
-manager = MachineManager()
+##### `patch_machine_id(patch: str) -> bool`
+
+应用机器码补丁。
+
+```python
+def patch_machine_id(self, patch: str) -> bool:
+    """
+    应用指定的机器码补丁
+    
+    参数:
+        patch (str): 补丁内容
+        
+    返回:
+        bool: 是否成功应用补丁
+    """
+```
+
+##### `verify_machine_id(machine_id: str) -> bool`
+
+验证机器码。
+
+```python
+def verify_machine_id(self, machine_id: str) -> bool:
+    """
+    验证指定的机器码是否有效
+    
+    参数:
+        machine_id (str): 要验证的机器码
+        
+    返回:
+        bool: 机器码是否有效
+    """
+```
+
+## 使用示例
+
+```python
+from src.machine_manager import MachineManager
+
+# 创建机器码管理器实例
+machine_manager = MachineManager()
 
 # 获取机器码
-machine_id = manager.get_machine_id()
+machine_id = machine_manager.get_machine_id()
+print(f"当前机器码: {machine_id}")
 
 # 重置机器码
-manager.reset_machine_id()
+if machine_manager.reset_machine_id():
+    print("机器码重置成功")
+
+# 验证机器码
+if machine_manager.verify_machine_id(machine_id):
+    print("机器码有效")
 
 # 应用补丁
-patch_data = {
-    "type": "hardware",
-    "value": "new_value"
-}
-manager.apply_patch(patch_data)
+if machine_manager.patch_machine_id("patch_content"):
+    print("补丁应用成功")
 ```
 
-## 5. 注意事项
+## 注意事项
 
-- 机器码获取需要考虑跨平台兼容性
-- 重置操作需要谨慎使用
-- 补丁应用前需要验证有效性
-- 提供完整的错误处理机制 
+1. 机器码相关操作需要管理员权限
+2. 重置机器码可能会导致某些功能暂时不可用
+3. 补丁操作需要谨慎，错误的补丁可能导致系统不稳定
+4. 建议在操作前备份重要数据
+
+## 错误处理
+
+- 所有方法都包含异常处理
+- 错误信息会通过日志记录
+- 关键操作失败会返回 False 或空字符串
+
+## 依赖关系
+
+- 操作系统 API
+- 系统注册表（Windows）
+- 系统文件（Linux/Mac） 

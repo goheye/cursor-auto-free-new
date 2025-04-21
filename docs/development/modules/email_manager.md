@@ -90,12 +90,42 @@ email_manager.close_mailbox()
 
 ## 7. 类定义
 
+### EmailManager
+
+邮箱管理类，负责处理所有与邮箱验证相关的操作。
+
+#### 属性
+
+- `config`: 配置管理器实例
+
+#### 方法
+
+##### `__init__(config)`
+
+初始化邮箱管理器。
+
 ```python
-class EmailManager:
-    def __init__(self, config: Any)
-    def connect(self) -> bool
-    def disconnect(self) -> None
-    def get_verification_code(self, timeout: int = 180, max_retries: int = 5) -> Optional[str]
+def __init__(self, config):
+    """
+    初始化邮箱管理器
+    
+    参数:
+        config: 配置管理器实例
+    """
+```
+
+##### `get_verification_code() -> str`
+
+获取验证码。
+
+```python
+def get_verification_code(self) -> str:
+    """
+    获取验证码
+    
+    返回:
+        str: 验证码字符串，如果获取失败则返回空字符串
+    """
 ```
 
 ## 8. 方法说明
