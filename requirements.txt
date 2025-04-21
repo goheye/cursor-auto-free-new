@@ -3,6 +3,9 @@ python-dotenv==1.0.0
 requests==2.31.0
 colorama==0.4.6
 DrissionPage==4.1.0.9
+cryptography==42.0.2
+pyyaml==6.0.1
+jsonschema==4.21.1
 
 # GUI 依赖
 PyQt6==6.6.1

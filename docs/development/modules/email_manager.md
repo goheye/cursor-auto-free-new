@@ -1,10 +1,85 @@
-# 邮箱管理模块 (EmailManager)
+# 邮箱验证模块设计文档
 
 ## 1. 模块概述
 
-`EmailManager` 是一个用于管理邮箱验证的模块，支持多种邮箱协议和临时邮箱服务。该模块主要用于获取验证码、管理邮箱连接和处理邮件内容。
+邮箱验证模块负责处理所有与邮箱相关的操作，包括临时邮箱管理、IMAP 邮件接收和验证码处理等功能。
 
-## 2. 功能特性
+## 2. 功能说明
+
+### 2.1 临时邮箱管理
+- 创建临时邮箱
+- 管理邮箱生命周期
+- 提供邮箱状态监控
+
+### 2.2 IMAP 邮件接收
+- 连接 IMAP 服务器
+- 接收和解析邮件
+- 提取验证码信息
+
+### 2.3 验证码处理
+- 识别验证码
+- 验证码格式转换
+- 验证码有效性检查
+
+## 3. 接口定义
+
+### 3.1 EmailManager 类
+```python
+class EmailManager:
+    def __init__(self, config):
+        """初始化邮箱管理器"""
+        pass
+        
+    def create_temp_mail(self):
+        """创建临时邮箱"""
+        pass
+        
+    def check_mail(self):
+        """检查邮件"""
+        pass
+        
+    def get_verification_code(self):
+        """获取验证码"""
+        pass
+        
+    def close_mailbox(self):
+        """关闭邮箱"""
+        pass
+```
+
+## 4. 使用示例
+
+```python
+from email_manager import EmailManager
+from config import Config
+
+# 初始化配置
+config = Config()
+
+# 初始化邮箱管理器
+email_manager = EmailManager(config)
+
+# 创建临时邮箱
+email = email_manager.create_temp_mail()
+
+# 检查邮件
+emails = email_manager.check_mail()
+
+# 获取验证码
+verification_code = email_manager.get_verification_code()
+
+# 关闭邮箱
+email_manager.close_mailbox()
+```
+
+## 5. 注意事项
+
+- 临时邮箱需要定期清理
+- IMAP 连接需要处理超时和重连
+- 验证码识别需要考虑多种格式
+- 提供完整的错误处理机制
+
+## 6. 功能特性
 
 - 支持多种邮箱协议（IMAP、POP3）
 - 支持临时邮箱服务
@@ -13,7 +88,7 @@
 - 详细的日志记录
 - 支持特殊邮箱（如网易邮箱）的处理
 
-## 3. 类定义
+## 7. 类定义
 
 ```python
 class EmailManager:
@@ -23,9 +98,9 @@ class EmailManager:
     def get_verification_code(self, timeout: int = 180, max_retries: int = 5) -> Optional[str]
 ```
 
-## 4. 方法说明
+## 8. 方法说明
 
-### 4.1 初始化方法
+### 8.1 初始化方法
 
 ```python
 def __init__(self, config: Any)
@@ -37,7 +112,7 @@ def __init__(self, config: Any)
 **说明**:
 初始化邮箱管理器，设置必要的属性和配置。
 
-### 4.2 连接方法
+### 8.2 连接方法
 
 ```python
 def connect(self) -> bool
@@ -49,7 +124,7 @@ def connect(self) -> bool
 **说明**:
 根据配置连接到邮箱服务器，支持 IMAP、POP3 和临时邮箱模式。
 
-### 4.3 断开连接方法
+### 8.3 断开连接方法
 
 ```python
 def disconnect(self) -> None
@@ -58,7 +133,7 @@ def disconnect(self) -> None
 **说明**:
 安全地断开与邮箱服务器的连接。
 
-### 4.4 获取验证码方法
+### 8.4 获取验证码方法
 
 ```python
 def get_verification_code(self, timeout: int = 180, max_retries: int = 5) -> Optional[str]
@@ -74,9 +149,9 @@ def get_verification_code(self, timeout: int = 180, max_retries: int = 5) -> Opt
 **说明**:
 尝试获取验证码，支持自动重试机制。
 
-## 5. 配置要求
+## 9. 配置要求
 
-### 5.1 IMAP 配置
+### 9.1 IMAP 配置
 ```json
 {
     "server": "imap.example.com",
@@ -87,7 +162,7 @@ def get_verification_code(self, timeout: int = 180, max_retries: int = 5) -> Opt
 }
 ```
 
-### 5.2 POP3 配置
+### 9.2 POP3 配置
 ```json
 {
     "server": "pop3.example.com",
@@ -97,7 +172,7 @@ def get_verification_code(self, timeout: int = 180, max_retries: int = 5) -> Opt
 }
 ```
 
-### 5.3 临时邮箱配置
+### 9.3 临时邮箱配置
 ```json
 {
     "temp_mail": "username",
@@ -106,9 +181,9 @@ def get_verification_code(self, timeout: int = 180, max_retries: int = 5) -> Opt
 }
 ```
 
-## 6. 使用示例
+## 10. 使用示例
 
-### 6.1 基本使用
+### 10.1 基本使用
 ```python
 from src.email_manager import EmailManager
 from config import Config
@@ -127,13 +202,13 @@ else:
     print("获取验证码失败")
 ```
 
-### 6.2 自定义重试次数
+### 10.2 自定义重试次数
 ```python
 # 设置更长的超时时间和更多的重试次数
 code = email_manager.get_verification_code(timeout=300, max_retries=10)
 ```
 
-## 7. 错误处理
+## 11. 错误处理
 
 模块会处理以下类型的错误：
 - 连接错误
@@ -144,7 +219,7 @@ code = email_manager.get_verification_code(timeout=300, max_retries=10)
 
 所有错误都会记录到日志中，并提供友好的错误信息。
 
-## 8. 注意事项
+## 12. 注意事项
 
 1. 使用网易邮箱时，需要特殊处理
 2. 临时邮箱服务可能需要额外的 API 密钥
@@ -152,7 +227,7 @@ code = email_manager.get_verification_code(timeout=300, max_retries=10)
 4. 定期检查邮箱连接状态
 5. 注意处理敏感信息
 
-## 9. 更新日志
+## 13. 更新日志
 
 ### v1.0.0 (2024-04-20)
 - 初始版本发布
