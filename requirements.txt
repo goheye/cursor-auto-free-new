@@ -3,17 +3,31 @@ python-dotenv==1.0.0
 requests==2.31.0
 colorama==0.4.6
 DrissionPage==4.1.0.9
-cryptography==42.0.2
+psutil==5.9.5
 pyyaml==6.0.1
-jsonschema==4.21.1
+jsonschema==4.19.1
+cryptography==41.0.3
+selenium==4.16.0
+webdriver-manager==4.0.1
 
-# GUI 依赖
+# 邮箱相关
+imaplib2==3.6
+poplib==0.1
+
+# Windows 特定依赖
+wmi==1.5.1; sys_platform == 'win32'
+
+# GUI 相关
 PyQt6==6.6.1
 qdarkstyle==3.2.0
 
-# 打包依赖
-pyinstaller==6.3.0
-auto-py-to-exe==2.43.0
+# 开发工具
+pytest==7.4.2
+black==23.7.0
+flake8==6.1.0
+mypy==1.5.1
 
-# 测试依赖
-pytest==8.0.0
+# 其他依赖
+typing-extensions==4.8.0
+python-dateutil==2.8.2
+email-validator==2.1.0.post1

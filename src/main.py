@@ -3,6 +3,13 @@ from .logger import logger
 from .machine_manager import MachineManager
 from .email_manager import EmailManager
 from .browser_manager import BrowserManager
+from .account_generator import AccountGenerator
+import psutil
+import os
+import time
+import random
+from typing import Optional, Dict
+from selenium.webdriver.common.by import By
 
 class CursorAutoFree:
     def __init__(self):
@@ -23,117 +30,26 @@ class CursorAutoFree:
         self.logger.info("初始化浏览器管理器...")
         self.browser_manager = BrowserManager(self.config)
         
+        self.logger.info("初始化账号生成器...")
+        self.account_generator = AccountGenerator()
+        
         self.logger.info("初始化完成")
         
-        self.keep_alive_interval = 3600  # 保活间隔，默认1小时
-        
-    def run(self) -> bool:
-        """运行主程序"""
+    def close_cursor_processes(self):
+        """关闭所有Cursor进程"""
         try:
-            self.logger.info("开始运行程序")
-            
-            # 1. 获取机器码
-            self.logger.info("步骤1: 获取机器码...")
-            machine_id = self.machine_manager.get_machine_id()
-            if not machine_id:
-                self.logger.error("获取机器码失败")
-                return False
-            self.logger.info(f"获取机器码成功: {machine_id}")
-                
-            # 2. 启动浏览器
-            self.logger.info("步骤2: 启动浏览器...")
-            if not self.browser_manager.start_browser():
-                self.logger.error("启动浏览器失败")
-                return False
-            self.logger.info("浏览器启动成功")
-                
-            try:
-                # 3. 访问 Cursor 网站
-                self.logger.info("步骤3: 访问 Cursor 网站...")
-                domain = self.config.domain.strip().strip("'").strip('"')
-                url = f"https://{domain}"
-                self.logger.info(f"访问URL: {url}")
-                
-                if not self.browser_manager.navigate_to(url):
-                    self.logger.error("访问网站失败")
-                    return False
-                self.logger.info("网站访问成功")
-                    
-                # 4. 等待并点击注册按钮
-                self.logger.info("步骤4: 查找注册按钮...")
-                if not self.browser_manager.wait_for_element("#register-button"):
-                    self.logger.error("未找到注册按钮")
-                    return False
-                    
-                self.logger.info("点击注册按钮...")
-                if not self.browser_manager.click_element("#register-button"):
-                    self.logger.error("点击注册按钮失败")
-                    return False
-                self.logger.info("注册按钮点击成功")
-                    
-                # 5. 输入邮箱
-                self.logger.info("步骤5: 输入邮箱...")
-                if not self.browser_manager.wait_for_element("#email-input"):
-                    self.logger.error("未找到邮箱输入框")
-                    return False
-                    
-                email = self.config.temp_mail
-                self.logger.info(f"输入邮箱: {email}")
-                if not self.browser_manager.input_text("#email-input", email):
-                    self.logger.error("输入邮箱失败")
-                    return False
-                self.logger.info("邮箱输入成功")
-                    
-                # 6. 点击发送验证码
-                self.logger.info("步骤6: 发送验证码...")
-                if not self.browser_manager.click_element("#send-code-button"):
-                    self.logger.error("点击发送验证码按钮失败")
-                    return False
-                self.logger.info("验证码发送成功")
-                    
-                # 7. 获取验证码
-                self.logger.info("步骤7: 获取验证码...")
-                verification_code = self.email_manager.get_verification_code()
-                if not verification_code:
-                    self.logger.error("获取验证码失败")
-                    return False
-                self.logger.info(f"获取验证码成功: {verification_code}")
-                    
-                # 8. 输入验证码
-                self.logger.info("步骤8: 输入验证码...")
-                if not self.browser_manager.wait_for_element("#verification-code-input"):
-                    self.logger.error("未找到验证码输入框")
-                    return False
-                    
-                self.logger.info(f"输入验证码: {verification_code}")
-                if not self.browser_manager.input_text("#verification-code-input", verification_code):
-                    self.logger.error("输入验证码失败")
-                    return False
-                self.logger.info("验证码输入成功")
-                    
-                # 9. 点击注册完成
-                self.logger.info("步骤9: 完成注册...")
-                if not self.browser_manager.click_element("#submit-button"):
-                    self.logger.error("点击注册完成按钮失败")
-                    return False
-                self.logger.info("注册完成按钮点击成功")
-                    
-                # 10. 等待注册成功
-                self.logger.info("步骤10: 等待注册成功...")
-                if not self.browser_manager.wait_for_element(".success-message"):
-                    self.logger.error("注册失败")
-                    return False
-                self.logger.info("注册成功")
-                    
-                return True
-                
-            finally:
-                # 确保浏览器被关闭
-                self.logger.info("关闭浏览器...")
-                self.browser_manager.close_browser()
-                
+            self.logger.info("正在关闭所有Cursor进程...")
+            for proc in psutil.process_iter(['name']):
+                if proc.info['name'] and 'cursor' in proc.info['name'].lower():
+                    try:
+                        proc.kill()
+                        self.logger.info(f"已关闭进程: {proc.info['name']}")
+                    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                        pass
+            self.logger.info("所有Cursor进程已关闭")
+            return True
         except Exception as e:
-            self.logger.error(f"运行程序时出错: {str(e)}")
+            self.logger.error(f"关闭Cursor进程时出错: {str(e)}")
             return False
             
     def reset_machine_id(self) -> bool:
@@ -144,59 +60,345 @@ class CursorAutoFree:
             self.logger.error(f"重置机器码时出错: {str(e)}")
             return False
             
-    def patch_machine_id(self, patch: str) -> bool:
-        """应用机器码补丁"""
+    def handle_turnstile(self, tab) -> bool:
+        """处理 Turnstile 验证"""
         try:
-            return self.machine_manager.patch_machine_id(patch)
+            self.logger.info("检测 Turnstile 验证...")
+            
+            # 更精确的验证框检测 - 只检测明确的Cloudflare验证框
+            iframes = self.browser_manager.driver.find_elements(
+                By.CSS_SELECTOR, 
+                "iframe[src*='challenges.cloudflare.com']"
+            )
+            
+            # 记录找到的iframe
+            if iframes:
+                self.logger.info(f"找到 {len(iframes)} 个验证框iframe")
+                for i, iframe in enumerate(iframes):
+                    src = iframe.get_attribute("src") or ""
+                    self.logger.info(f"iframe {i+1}: src={src}")
+                
+                # 确认是否真的是验证框
+                verification_confirmed = False
+                for iframe in iframes:
+                    src = iframe.get_attribute("src") or ""
+                    # 确保是Cloudflare验证iframe
+                    if "cloudflare" in src.lower() and "challenge" in src.lower():
+                        verification_confirmed = True
+                        break
+                
+                if not verification_confirmed:
+                    self.logger.info("发现iframe但不是验证框，继续注册流程")
+                    return True
+                
+                self.logger.info("确认发现验证框，开始处理...")
+                
+                # 尝试截取当前页面截图
+                try:
+                    screenshot_path = os.path.join(os.getcwd(), "verification_screenshot.png")
+                    self.browser_manager.driver.save_screenshot(screenshot_path)
+                    self.logger.info(f"已保存验证页面截图: {screenshot_path}")
+                except Exception as e:
+                    self.logger.warning(f"保存截图失败: {str(e)}")
+                
+                # 尝试处理每个验证框
+                for i, iframe in enumerate(iframes):
+                    try:
+                        self.logger.info(f"处理第 {i+1} 个验证框...")
+                        
+                        # 切换到iframe
+                        self.browser_manager.driver.switch_to.frame(iframe)
+                        self.logger.info("已切换到验证框内部")
+                        
+                        # 检查iframe内部是否包含验证元素
+                        validation_elements = self.browser_manager.driver.find_elements(
+                            By.CSS_SELECTOR,
+                            "div[class*='turnstile'], div[class*='cf-'], div[class*='challenge']"
+                        )
+                        
+                        if not validation_elements:
+                            self.logger.info("iframe内未找到验证元素，跳过此iframe")
+                            self.browser_manager.driver.switch_to.default_content()
+                            continue
+                        
+                        # 尝试点击验证元素
+                        clicked = False
+                        for elem in validation_elements:
+                            if elem.is_displayed():
+                                try:
+                                    elem.click()
+                                    self.logger.info("点击验证元素成功")
+                                    clicked = True
+                                    time.sleep(5)
+                                    break
+                                except Exception as e:
+                                    self.logger.warning(f"点击验证元素失败: {str(e)}")
+                        
+                        if not clicked:
+                            self.logger.info("未能点击任何验证元素")
+                            
+                        # 等待验证完成
+                        for _ in range(5):
+                            time.sleep(1)
+                            # 检查是否有成功标志
+                            success_elements = self.browser_manager.driver.find_elements(
+                                By.CSS_SELECTOR,
+                                "div[class*='success'], span[class*='success']"
+                            )
+                            if success_elements:
+                                self.logger.info("验证成功完成")
+                                break
+                        
+                    except Exception as e:
+                        self.logger.warning(f"处理验证框时出错: {str(e)}")
+                    finally:
+                        # 切回主框架
+                        self.browser_manager.driver.switch_to.default_content()
+                
+                # 额外等待时间，确保验证处理完成
+                self.logger.info("验证处理完成，等待继续...")
+                time.sleep(5)
+                return True
+            
+            # 如果没有找到验证iframe，检查页面源码确认
+            page_source = self.browser_manager.driver.page_source.lower()
+            turnstile_indicators = [
+                "cf-turnstile", 
+                "cloudflare turnstile", 
+                "cf-challenge"
+            ]
+            
+            for indicator in turnstile_indicators:
+                if indicator in page_source:
+                    self.logger.info(f"页面源码中发现验证标识: {indicator}")
+                    # 等待，让用户有机会手动处理验证
+                    self.logger.info("等待可能的验证完成...")
+                    time.sleep(10)
+                    return True
+            
+            # 如果没有任何验证指标，确认没有验证
+            self.logger.info("确认没有验证，继续注册流程")
+            return True
+                
         except Exception as e:
-            self.logger.error(f"应用机器码补丁时出错: {str(e)}")
+            self.logger.error(f"处理 Turnstile 验证时出错: {str(e)}")
             return False
             
-    def verify_machine_id(self, machine_id: str) -> bool:
-        """验证机器码"""
+    def get_session_token(self) -> Optional[str]:
+        """获取会话令牌"""
         try:
-            return self.machine_manager.verify_machine_id(machine_id)
+            self.logger.info("获取会话令牌...")
+            cookies = self.browser_manager.get_cookies()
+            for cookie in cookies:
+                if cookie.get("name") == "WorkosCursorSessionToken":
+                    token = cookie["value"].split("%3A%3A")[1]
+                    self.logger.info("成功获取会话令牌")
+                    return token
+            self.logger.error("未找到会话令牌")
+            return None
         except Exception as e:
-            self.logger.error(f"验证机器码时出错: {str(e)}")
-            return False
+            self.logger.error(f"获取会话令牌时出错: {str(e)}")
+            return None
             
-    def keep_alive(self):
-        """保活功能"""
+    def check_and_handle_turnstile(self) -> bool:
+        """检查是否出现验证并处理"""
+        self.logger.info("检查是否出现验证...")
         try:
-            # 1. 获取会话令牌
-            session_token = self.get_session_token()
-            if not session_token:
-                self.logger.warning("获取会话令牌失败，尝试重新登录")
-                return False
-                
-            # 2. 更新认证信息
-            if not self.update_auth():
-                self.logger.warning("更新认证信息失败")
-                return False
-                
-            # 3. 检查账号状态
-            if not self.check_account_status():
-                self.logger.warning("账号状态异常")
-                return False
-                
-            self.logger.info("保活成功")
+            time.sleep(5)  # 增加等待时间，确保验证框有足够时间加载
+            result = self.handle_turnstile(None)
+            time.sleep(3)  # 等待验证处理完成
+            return result
+        except Exception as e:
+            self.logger.warning(f"处理验证时出现异常: {str(e)}，但继续注册流程")
             return True
             
-        except Exception as e:
-            self.logger.error(f"保活失败: {str(e)}")
-            return False
+    def register_cursor_account(self) -> Dict:
+        """注册Cursor账号"""
+        try:
+            self.logger.info("开始注册Cursor账号")
             
-    def start_keep_alive(self):
-        """启动保活定时任务"""
-        import threading
-        import time
-        
-        def keep_alive_loop():
-            while True:
-                self.keep_alive()
-                time.sleep(self.keep_alive_interval)
+            # 1. 生成随机账号信息
+            account_info = self.account_generator.generate_account()
+            self.logger.info(f"生成账号信息: {account_info}")
+            
+            # 2. 启动浏览器
+            self.logger.info("启动浏览器...")
+            if not self.browser_manager.start_browser():
+                self.logger.error("启动浏览器失败")
+                return {"success": False, "error": "启动浏览器失败"}
                 
-        # 启动保活线程
-        self.keep_alive_thread = threading.Thread(target=keep_alive_loop, daemon=True)
-        self.keep_alive_thread.start()
-        self.logger.info("保活定时任务已启动") 
+            try:
+                # 3. 访问注册页面
+                self.logger.info("访问注册页面...")
+                sign_up_url = "https://authenticator.cursor.sh/sign-up"
+                if not self.browser_manager.navigate_to(sign_up_url):
+                    self.logger.error("访问注册页面失败")
+                    return {"success": False, "error": "访问注册页面失败"}
+                
+                # 等待页面完全加载
+                time.sleep(5)  # 增加等待时间
+                
+                # 检查初始页面加载后是否出现验证
+                self.check_and_handle_turnstile()
+                    
+                # 4. 填写第一步表单（个人信息）
+                self.logger.info("填写第一步个人信息...")
+                
+                # 填写名字
+                self.logger.info("填写名字...")
+                self.browser_manager.input_text("input[name='first_name']", account_info["first_name"])
+                time.sleep(1)
+                    
+                # 填写姓氏
+                self.logger.info("填写姓氏...")
+                self.browser_manager.input_text("input[name='last_name']", account_info["last_name"])
+                time.sleep(1)
+                    
+                # 填写邮箱
+                self.logger.info("填写邮箱...")
+                self.browser_manager.input_text("input[name='email']", account_info["email"])
+                time.sleep(1)
+                
+                # 6. 点击Continue按钮
+                self.logger.info("点击Continue按钮...")
+                if not self.browser_manager.click_element("button[type='submit']"):
+                    self.logger.error("点击Continue按钮失败")
+                    return {"success": False, "error": "点击Continue按钮失败"}
+                
+                # 等待第二页加载
+                self.logger.info("等待第二页(密码设置页)加载...")
+                time.sleep(5)
+                
+                # 检查点击Continue后是否出现验证
+                self.check_and_handle_turnstile()
+                
+                # 获取并显示当前页面源码，帮助诊断密码字段
+                try:
+                    page_source = self.browser_manager.driver.page_source
+                    self.logger.info(f"当前页面URL: {self.browser_manager.driver.current_url}")
+                    self.logger.info(f"页面标题: {self.browser_manager.driver.title}")
+                    
+                    # 尝试查找输入元素
+                    inputs = self.browser_manager.driver.find_elements(By.TAG_NAME, "input")
+                    self.logger.info(f"找到 {len(inputs)} 个输入元素:")
+                    for i, input_elem in enumerate(inputs):
+                        input_type = input_elem.get_attribute("type")
+                        input_name = input_elem.get_attribute("name")
+                        input_id = input_elem.get_attribute("id")
+                        self.logger.info(f"输入元素 {i+1}: type={input_type}, name={input_name}, id={input_id}")
+                except Exception as e:
+                    self.logger.warning(f"获取页面信息失败: {str(e)}")
+                
+                # 7. 设置密码 (在第二步页面)
+                self.logger.info("设置密码...")
+                password_selectors = ["input[name='password']", "input[type='password']", "input#password"]
+                password_set = False
+                
+                for selector in password_selectors:
+                    try:
+                        if self.browser_manager.input_text(selector, account_info["password"]):
+                            self.logger.info(f"使用选择器 {selector} 成功设置密码")
+                            password_set = True
+                            break
+                    except Exception as e:
+                        self.logger.warning(f"使用选择器 {selector} 设置密码失败: {str(e)}")
+                
+                if not password_set:
+                    # 尝试直接使用JavaScript设置密码
+                    try:
+                        self.logger.info("尝试使用JavaScript设置密码...")
+                        js_result = self.browser_manager.driver.execute_script(
+                            "var inputs = document.querySelectorAll('input[type=\"password\"]'); "
+                            "if(inputs.length > 0) { inputs[0].value = arguments[0]; return true; } return false;", 
+                            account_info["password"]
+                        )
+                        if js_result:
+                            self.logger.info("使用JavaScript设置密码成功")
+                            password_set = True
+                        else:
+                            self.logger.warning("没有找到密码输入框")
+                    except Exception as e:
+                        self.logger.error(f"使用JavaScript设置密码出错: {str(e)}")
+                
+                if not password_set:
+                    self.logger.error("设置密码失败")
+                    return {"success": False, "error": "设置密码失败"}
+                
+                # 点击注册页面2的提交按钮
+                self.logger.info("点击第二页提交按钮...")
+                if not self.browser_manager.click_element("button[type='submit']"):
+                    self.logger.error("点击第二页提交按钮失败")
+                    return {"success": False, "error": "点击第二页提交按钮失败"}
+                
+                # 等待验证邮件页面加载
+                self.logger.info("等待验证邮件页面加载...")
+                time.sleep(5)
+                
+                # 检查点击第二页提交按钮后是否出现验证
+                self.check_and_handle_turnstile()
+                
+                # 等待验证邮件发送
+                self.logger.info("等待验证邮件发送...")
+                time.sleep(5)  # 给服务器足够时间发送验证邮件
+                    
+                # 8. 获取并输入验证码
+                self.logger.info("获取验证码...")
+                verification_code = self.email_manager.get_verification_code(account_info["email"])
+                if not verification_code:
+                    self.logger.error("获取验证码失败")
+                    return {"success": False, "error": "获取验证码失败"}
+                    
+                self.logger.info(f"输入验证码: {verification_code}")
+                for i, digit in enumerate(verification_code):
+                    if not self.browser_manager.input_text(f"[data-index='{i}']", digit):
+                        self.logger.error(f"输入验证码第{i+1}位失败")
+                        return {"success": False, "error": f"输入验证码第{i+1}位失败"}
+                    time.sleep(random.uniform(0.1, 0.3))
+                
+                # 点击验证按钮（如果有）
+                verify_button_selectors = ["button[type='submit']", "button.submit", "button.verify"]
+                for selector in verify_button_selectors:
+                    try:
+                        if self.browser_manager.click_element(selector):
+                            self.logger.info(f"点击验证按钮成功: {selector}")
+                            break
+                    except Exception as e:
+                        self.logger.warning(f"点击验证按钮失败: {str(e)}")
+                
+                # 检查点击验证按钮后是否出现验证
+                self.check_and_handle_turnstile()
+                    
+                # 9. 等待注册完成
+                self.logger.info("等待注册完成...")
+                time.sleep(5)  # 增加等待时间
+                
+                # 检查是否注册成功（检查URL或特定元素）
+                current_url = self.browser_manager.driver.current_url
+                if "dashboard" in current_url or "home" in current_url:
+                    self.logger.info(f"检测到成功页面: {current_url}")
+                else:
+                    self.logger.warning(f"未检测到成功页面，当前URL: {current_url}")
+                    # 尝试继续，可能还是成功了
+                
+                # 10. 获取会话令牌
+                session_token = self.get_session_token()
+                if not session_token:
+                    self.logger.warning("获取会话令牌失败，但继续保存账号信息")
+                    # return {"success": False, "error": "获取会话令牌失败"}
+                else:
+                    account_info["session_token"] = session_token
+                    
+                # 11. 保存账号信息
+                self.config.save_account(account_info)
+                
+                self.logger.info("账号注册成功")
+                return {"success": True, "account_info": account_info}
+                
+            finally:
+                # 确保浏览器被关闭
+                self.logger.info("关闭浏览器...")
+                self.browser_manager.stop_browser()
+                
+        except Exception as e:
+            self.logger.error(f"注册账号时出错: {str(e)}")
+            return {"success": False, "error": str(e)} 

@@ -51,6 +51,14 @@ class Config:
         # 加载配置
         self.load_config()
         
+        self.browser_config = {
+            'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'headless': False,
+            'path': None,  # 浏览器路径
+            'proxy': None,  # 代理设置
+            'extensions': []  # 扩展列表
+        }
+        
     def _init_encryption(self) -> None:
         """初始化加密密钥"""
         key_path = os.path.join(self.config_dir, ".key")
@@ -279,9 +287,31 @@ class Config:
         return {
             'user_agent': self.browser_user_agent,
             'headless': self.browser_headless,
-            'path': self.browser_path,
-            'proxy': self.browser_proxy or ''
+            'path': self.browser_path if self.browser_path else None,
+            'proxy': self.browser_proxy if self.browser_proxy else None,
+            'extensions': []  # 暂时不支持扩展
         }
+        
+    def set_browser_path(self, path: str) -> None:
+        """设置浏览器路径"""
+        self.browser_config['path'] = path
+        
+    def set_proxy(self, proxy: str) -> None:
+        """设置代理"""
+        self.browser_config['proxy'] = proxy
+        
+    def add_extension(self, extension_path: str) -> None:
+        """添加扩展"""
+        if extension_path not in self.browser_config['extensions']:
+            self.browser_config['extensions'].append(extension_path)
+            
+    def set_headless(self, headless: bool) -> None:
+        """设置无头模式"""
+        self.browser_config['headless'] = headless
+        
+    def set_user_agent(self, user_agent: str) -> None:
+        """设置用户代理"""
+        self.browser_config['user_agent'] = user_agent
         
     def get_temp_mail_config(self) -> Dict[str, str]:
         """获取临时邮箱配置"""
@@ -294,6 +324,14 @@ class Config:
             'epin': self.temp_mail_epin,
             'ext': self.temp_mail_ext
         }
+        
+    def get_protocol(self) -> str:
+        """获取邮件协议类型
+        
+        Returns:
+            str: 'IMAP' 或 'POP3'
+        """
+        return self.imap_protocol
         
     def check_config(self) -> None:
         """检查配置项是否有效"""

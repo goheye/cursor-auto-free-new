@@ -26,12 +26,12 @@ from logo import print_logo
 from config import Config
 from datetime import datetime
 
-# Define EMOJI dictionary
+# 定义表情符号字典
 EMOJI = {"ERROR": get_translation("error"), "WARNING": get_translation("warning"), "INFO": get_translation("info")}
 
 
 class VerificationStatus(Enum):
-    """Verification status enum"""
+    """验证状态枚举"""
 
     PASSWORD_PAGE = "@name=password"
     CAPTCHA_PAGE = "@data-index=0"
@@ -39,27 +39,27 @@ class VerificationStatus(Enum):
 
 
 class TurnstileError(Exception):
-    """Turnstile verification related exception"""
+    """Turnstile验证相关异常"""
 
     pass
 
 
 def save_screenshot(tab, stage: str, timestamp: bool = True) -> None:
     """
-    Save a screenshot of the page
+    保存页面截图
 
-    Args:
-        tab: Browser tab object
-        stage: Stage identifier for the screenshot
-        timestamp: Whether to add a timestamp
+    参数:
+        tab: 浏览器标签对象
+        stage: 截图的阶段标识
+        timestamp: 是否添加时间戳
     """
     try:
-        # Create screenshots directory
+        # 创建截图目录
         screenshot_dir = "screenshots"
         if not os.path.exists(screenshot_dir):
             os.makedirs(screenshot_dir)
 
-        # Generate filename
+        # 生成文件名
         if timestamp:
             filename = f"turnstile_{stage}_{int(time.time())}.png"
         else:
@@ -67,7 +67,7 @@ def save_screenshot(tab, stage: str, timestamp: bool = True) -> None:
 
         filepath = os.path.join(screenshot_dir, filename)
 
-        # Save screenshot
+        # 保存截图
         tab.get_screenshot(filepath)
         logging.debug(f"Screenshot saved: {filepath}")
     except Exception as e:
@@ -76,10 +76,10 @@ def save_screenshot(tab, stage: str, timestamp: bool = True) -> None:
 
 def check_verification_success(tab) -> Optional[VerificationStatus]:
     """
-    Check if verification was successful
+    检查验证是否成功
 
-    Returns:
-        VerificationStatus: The corresponding status if successful, None if failed
+    返回:
+        VerificationStatus: 如果成功则返回对应状态，失败则返回None
     """
     for status in VerificationStatus:
         if tab.ele(status.value):
@@ -90,18 +90,18 @@ def check_verification_success(tab) -> Optional[VerificationStatus]:
 
 def handle_turnstile(tab, max_retries: int = 2, retry_interval: tuple = (1, 2)) -> bool:
     """
-    Handle Turnstile verification
+    处理Turnstile验证
 
-    Args:
-        tab: Browser tab object
-        max_retries: Maximum number of retries
-        retry_interval: Retry interval range (min, max)
+    参数:
+        tab: 浏览器标签对象
+        max_retries: 最大重试次数
+        retry_interval: 重试间隔范围(最小值, 最大值)
 
-    Returns:
-        bool: Whether verification was successful
+    返回:
+        bool: 验证是否成功
 
-    Raises:
-        TurnstileError: Exception during verification process
+    抛出:
+        TurnstileError: 验证过程中的异常
     """
     logging.info(get_translation("detecting_turnstile"))
     save_screenshot(tab, "start")
@@ -114,7 +114,7 @@ def handle_turnstile(tab, max_retries: int = 2, retry_interval: tuple = (1, 2)) 
             logging.debug(get_translation("retry_verification", count=retry_count))
 
             try:
-                # Locate verification frame element
+                # 定位验证框架元素
                 challenge_check = (
                     tab.ele("@id=cf-turnstile", timeout=2)
                     .child()
@@ -125,15 +125,15 @@ def handle_turnstile(tab, max_retries: int = 2, retry_interval: tuple = (1, 2)) 
 
                 if challenge_check:
                     logging.info(get_translation("detected_turnstile"))
-                    # Random delay before clicking verification
+                    # 点击验证前的随机延迟
                     time.sleep(random.uniform(1, 3))
                     challenge_check.click()
                     time.sleep(2)
 
-                    # Save screenshot after verification
+                    # 验证后保存截图
                     save_screenshot(tab, "clicked")
 
-                    # Check verification result
+                    # 检查验证结果
                     if check_verification_success(tab):
                         logging.info(get_translation("turnstile_verification_passed"))
                         save_screenshot(tab, "success")
@@ -142,14 +142,14 @@ def handle_turnstile(tab, max_retries: int = 2, retry_interval: tuple = (1, 2)) 
             except Exception as e:
                 logging.debug(f"Current attempt unsuccessful: {str(e)}")
 
-            # Check if already verified
+            # 检查是否已经验证
             if check_verification_success(tab):
                 return True
 
-            # Random delay before next attempt
+            # 下次尝试前的随机延迟
             time.sleep(random.uniform(*retry_interval))
 
-        # Exceeded maximum retries
+        # 超过最大重试次数
         logging.error(get_translation("verification_failed_max_retries", max_retries=max_retries))
         logging.error(
             "Please visit the open source project for more information: https://github.com/chengazhen/cursor-auto-free"
@@ -166,11 +166,11 @@ def handle_turnstile(tab, max_retries: int = 2, retry_interval: tuple = (1, 2)) 
 
 def get_cursor_session_token(tab, max_attempts=3, retry_interval=2):
     """
-    Get Cursor session token with retry mechanism
-    :param tab: Browser tab
-    :param max_attempts: Maximum number of attempts
-    :param retry_interval: Retry interval (seconds)
-    :return: Session token or None
+    获取Cursor会话令牌(带重试机制)
+    :param tab: 浏览器标签
+    :param max_attempts: 最大尝试次数
+    :param retry_interval: 重试间隔(秒)
+    :return: 会话令牌或None
     """
     logging.info(get_translation("getting_cookie"))
     attempts = 0
@@ -205,7 +205,7 @@ def get_cursor_session_token(tab, max_attempts=3, retry_interval=2):
 
 def update_cursor_auth(email=None, access_token=None, refresh_token=None):
     """
-    Update Cursor authentication information
+    更新Cursor认证信息
     """
     auth_manager = CursorAuthManager()
     return auth_manager.update_auth(email, access_token, refresh_token)
@@ -326,6 +326,7 @@ class EmailGenerator:
             )
         ),
     ):
+        """初始化邮箱生成器"""
         configInstance = Config()
         configInstance.print_config()
         self.domain = configInstance.get_domain()
@@ -335,27 +336,28 @@ class EmailGenerator:
         self.default_last_name = self.generate_random_name()
 
     def load_names(self):
+        """加载名字列表"""
         try:
             with open("names-dataset.txt", "r") as file:
                 return file.read().split()
         except FileNotFoundError:
             logging.warning(get_translation("names_file_not_found"))
-            # Fallback to a small set of default names if the file is not found
+            # 如果文件未找到，使用默认名字列表
             return ["John", "Jane", "Alex", "Emma", "Michael", "Olivia", "William", "Sophia", 
                     "James", "Isabella", "Robert", "Mia", "David", "Charlotte", "Joseph", "Amelia"]
 
     def generate_random_name(self):
-        """Generate a random username"""
+        """生成随机用户名"""
         return random.choice(self.names)
 
     def generate_email(self, length=4):
-        """Generate a random email address"""
-        length = random.randint(0, length)  # Generate a random int between 0 and length
-        timestamp = str(int(time.time()))[-length:]  # Use the last length digits of timestamp
+        """生成随机邮箱地址"""
+        length = random.randint(0, length)  # 生成0到length之间的随机数
+        timestamp = str(int(time.time()))[-length:]  # 使用时间戳的最后length位
         return f"{self.default_first_name}{timestamp}@{self.domain}"
 
     def get_account_info(self):
-        """Get complete account information"""
+        """获取完整的账号信息"""
         return {
             "email": self.generate_email(),
             "password": self.default_password,
@@ -365,9 +367,9 @@ class EmailGenerator:
 
 
 def get_user_agent():
-    """Get user_agent"""
+    """获取用户代理"""
     try:
-        # Use JavaScript to get user agent
+        # 使用JavaScript获取用户代理
         browser_manager = BrowserManager()
         browser = browser_manager.init_browser()
         user_agent = browser.latest_tab.run_js("return navigator.userAgent")
@@ -379,7 +381,7 @@ def get_user_agent():
 
 
 def check_cursor_version():
-    """Check cursor version"""
+    """检查Cursor版本"""
     pkg_path, main_path = patch_cursor_get_machine_id.get_cursor_paths()
     with open(pkg_path, "r", encoding="utf-8") as f:
         version = json.load(f)["version"]
@@ -387,23 +389,25 @@ def check_cursor_version():
 
 
 def reset_machine_id(greater_than_0_45):
+    """重置机器码"""
     if greater_than_0_45:
-        # Prompt to manually execute script https://github.com/chengazhen/cursor-auto-free/blob/main/patch_cursor_get_machine_id.py
+        # 提示手动执行脚本 https://github.com/chengazhen/cursor-auto-free/blob/main/patch_cursor_get_machine_id.py
         go_cursor_help.go_cursor_help()
     else:
         MachineIDResetter().reset_machine_ids()
 
 
 def print_end_message():
+    """打印结束消息"""
     logging.info("\n\n\n\n\n")
     logging.info("=" * 30)
     logging.info(get_translation("all_operations_completed"))
-    logging.info("\n=== Get More Information ===")
+    logging.info("\n=== 获取更多信息 ===")
     logging.info("📺 Bilibili UP: 想回家的前端")
-    logging.info("🔥 WeChat Official Account: code 未来")
+    logging.info("🔥 微信公众号: code 未来")
     logging.info("=" * 30)
     logging.info(
-        "Please visit the open source project for more information: https://github.com/chengazhen/cursor-auto-free"
+        "请访问开源项目获取更多信息: https://github.com/chengazhen/cursor-auto-free"
     )
 
 

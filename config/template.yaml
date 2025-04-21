@@ -1,0 +1,19 @@
+browser:
+  headless: true
+  path: ''
+  proxy: ''
+  user_agent: Mozilla/5.0
+domain: example.com
+imap:
+  directory: inbox
+  enabled: false
+  password: your_password
+  port: 993
+  protocol: IMAP
+  server: imap.example.com
+  user: your_user
+temp_mail:
+  enabled: true
+  epin: your_epin
+  ext: your_ext
+  mail: your_temp_mail

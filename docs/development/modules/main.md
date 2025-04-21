@@ -1,178 +1,97 @@
-# Main 模块
+# Main 模块开发文档
 
-## 概述
+## 1. 模块概述
 
-Main 模块是 Cursor Auto Free 程序的入口点，负责初始化和管理整个应用程序的运行。该模块包含 `CursorAutoFree` 类，用于协调各个功能模块的工作。
+`main.py` 是 Cursor Auto Free 项目的核心入口模块，负责初始化应用程序并协调各个功能模块的工作。
 
-## 功能说明
+## 2. 功能说明
 
-- 程序初始化和配置加载
-- 协调各个管理器的工作
-- 提供主要的自动化流程控制
-- 实现保活功能
+### 2.1 主要功能
+- 应用程序初始化
+- 进程管理
+- 机器码管理
+- 账号注册自动化
 
-## 类定义
+### 2.2 核心类
+- `CursorAutoFree`: 主应用程序类
 
-### CursorAutoFree
+## 3. 类设计
 
-主程序类，负责管理整个应用程序的生命周期。
-
-#### 属性
-
-- `logger`: 日志记录器实例
-- `config`: 配置管理器实例
-- `machine_manager`: 机器码管理器实例
-- `email_manager`: 邮箱管理器实例
-- `browser_manager`: 浏览器管理器实例
-- `keep_alive_interval`: 保活间隔时间（秒）
-
-#### 方法
-
-##### `__init__()`
-
-初始化 CursorAutoFree 实例。
-
+### 3.1 CursorAutoFree 类
 ```python
-def __init__(self):
-    self.logger = logger
-    self.config = Config()
-    self.machine_manager = MachineManager()
-    self.email_manager = EmailManager(self.config)
-    self.browser_manager = BrowserManager(self.config)
-    self.keep_alive_interval = 3600
-```
-
-##### `run() -> bool`
-
-运行主程序流程。
-
-```python
-def run(self) -> bool:
-    """
-    执行主要的自动化流程：
-    1. 获取机器码
-    2. 启动浏览器
-    3. 访问 Cursor 网站
-    4. 执行注册流程
-    5. 处理验证码
-    6. 完成注册
-    
-    返回:
-        bool: 是否成功完成流程
-    """
-```
-
-##### `reset_machine_id() -> bool`
-
-重置机器码。
-
-```python
-def reset_machine_id(self) -> bool:
-    """
-    重置当前机器的机器码
-    
-    返回:
-        bool: 是否成功重置
-    """
-```
-
-##### `patch_machine_id(patch: str) -> bool`
-
-应用机器码补丁。
-
-```python
-def patch_machine_id(self, patch: str) -> bool:
-    """
-    应用指定的机器码补丁
-    
-    参数:
-        patch (str): 补丁内容
+class CursorAutoFree:
+    def __init__(self):
+        """初始化应用程序"""
         
-    返回:
-        bool: 是否成功应用补丁
-    """
-```
-
-##### `verify_machine_id(machine_id: str) -> bool`
-
-验证机器码。
-
-```python
-def verify_machine_id(self, machine_id: str) -> bool:
-    """
-    验证指定的机器码是否有效
-    
-    参数:
-        machine_id (str): 要验证的机器码
+    def close_cursor_processes(self):
+        """关闭所有Cursor进程"""
         
-    返回:
-        bool: 机器码是否有效
-    """
+    def reset_machine_id(self) -> bool:
+        """重置机器码"""
+        
+    def register_cursor_account(self) -> bool:
+        """注册Cursor账号"""
 ```
 
-##### `keep_alive() -> bool`
+## 4. 依赖关系
 
-执行保活操作。
+### 4.1 内部依赖
+- `config.py`: 配置管理
+- `logger.py`: 日志管理
+- `machine_manager.py`: 机器码管理
+- `email_manager.py`: 邮箱管理
+- `browser_manager.py`: 浏览器自动化
 
-```python
-def keep_alive(self) -> bool:
-    """
-    执行保活操作：
-    1. 获取会话令牌
-    2. 更新认证信息
-    3. 检查账号状态
-    
-    返回:
-        bool: 保活是否成功
-    """
-```
+### 4.2 外部依赖
+- `psutil`: 进程管理
+- `os`: 系统操作
 
-##### `start_keep_alive()`
+## 5. 开发注意事项
 
-启动保活定时任务。
+### 5.1 初始化顺序
+1. 配置加载
+2. 日志初始化
+3. 管理器初始化
+   - 机器码管理器
+   - 邮箱管理器
+   - 浏览器管理器
 
-```python
-def start_keep_alive(self):
-    """
-    启动保活定时任务，每 keep_alive_interval 秒执行一次保活操作
-    """
-```
+### 5.2 错误处理
+- 所有关键操作都需要异常处理
+- 使用日志记录错误信息
+- 确保资源正确释放
 
-## 使用示例
+### 5.3 资源管理
+- 确保浏览器进程正确关闭
+- 处理进程清理
+- 管理临时文件
 
-```python
-from src.main import CursorAutoFree
+## 6. 测试要点
 
-# 创建实例
-app = CursorAutoFree()
+### 6.1 单元测试
+- 初始化测试
+- 进程管理测试
+- 机器码重置测试
+- 账号注册测试
 
-# 运行主程序
-if app.run():
-    print("程序运行成功")
-else:
-    print("程序运行失败")
+### 6.2 集成测试
+- 完整流程测试
+- 错误恢复测试
+- 资源清理测试
 
-# 启动保活
-app.start_keep_alive()
-```
+## 7. 已知问题
 
-## 注意事项
+### 7.1 当前问题
+- 暂无
 
-1. 运行程序前确保已正确配置环境变量
-2. 保活功能需要定期执行以维持账号状态
-3. 机器码相关操作需要管理员权限
-4. 浏览器自动化操作可能需要较长时间
+### 7.2 待优化项
+- 异步处理优化
+- 错误恢复机制增强
+- 资源使用优化
 
-## 错误处理
+## 8. 更新日志
 
-- 所有方法都包含异常处理
-- 错误信息会通过日志记录
-- 关键操作失败会返回 False
-
-## 依赖关系
-
-- config.py
-- logger.py
-- machine_manager.py
-- email_manager.py
-- browser_manager.py 
+### v1.0.0
+- 初始版本
+- 实现基本功能
+- 添加完整文档 
